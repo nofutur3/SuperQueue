@@ -12,21 +12,32 @@ jobs:
       - name: Install dependencies
         uses: php-actions/composer@v6
 
-      - name: Create artifacts
+      - name: Artifacts - vendor
         uses: actions/upload-artifact@master
         with:
           name: vendor
           path: vendor
+
+      - name: Artifacts - lockfile
+        uses: actions/upload-artifact@master
+        with:
+          name: lockfile
+          path: composer.lock
   ci:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Code style
-        uses: zalexki/php-cs-fixer-action@master
+      - name: Get artifacts
+        uses: actions/download-artifact@v3
         with:
-          other-cmds: '--stop-on-violation --dry-run'
+          name: vendor
+
+      - name: Code style
+        uses: php-actions/composer@v6
+        with:
+          command: cs-check
 
       - name: Static analysis
         uses: php-actions/phpstan@v3
@@ -34,11 +45,12 @@ jobs:
           configuration: phpstan.neon
 
   security:
-    name: Security Checker
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: Get composer.lock
+        uses: actions/download-artifact@v3
+        with:
+          name: lockfile
 
       - name: Check security
         uses: docker://pplotka/local-php-security-checker-github-actions
